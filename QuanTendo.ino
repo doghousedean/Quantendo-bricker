@@ -49,7 +49,7 @@ void setup() {
   Serial.begin(115200);
   randomSeed(analogRead(0));
 
-  Serial.println("QuanTendo");
+  Serial.println("QuanTendo - Bricker");
 
   my_quantendo = quantendo();
   my_quantendo.begin();
@@ -60,11 +60,19 @@ void setup() {
 
 }
 
+void dpln(String msg){
+  // Prints to serial if dev mode
+  if (my_quantendo.isDev()){
+    Serial.println(msg);
+  }
+}
+
 void draw_digit(uint8_t x, uint8_t y, uint8_t digit, uint8_t r, uint8_t g, uint8_t b){
+  // Draws a digit at x, y with colour r, g, b
+  my_quantendo.rectangle(x - 1, y - 1, x + 4, y + 6, r, g, b);
   for (int i = 0; i < 5; i++) {
     for (int j = 0; j < 3; j++) {
       if (digits[digit][i][j] == 1) {
-        // int pixelIndex = (y + i) * WIDTH + (x + j);
         my_quantendo.setPixel(x + j, y - i, r, g, b);
       }
     }
@@ -73,24 +81,54 @@ void draw_digit(uint8_t x, uint8_t y, uint8_t digit, uint8_t r, uint8_t g, uint8
 
 void ball_collision(){
   // Detect collisions when moving in a `dir`
-  // 0 = north
+  // 0 = north 
   // 1 = north-east
-  // 2 = east
+  // 2 = east, unlikely
   // 3 = south-east
   // 4 = south
   // 5 = south-west
-  // 6 = west
+  // 6 = west, unlikely
   // 7 = north-west
   switch(ball_dir){
-    case 0:
+    case 0: // North
       if (my_quantendo.getPixel(ball_x, ball_y + 1) != 0 ){
-        hit_brick = 1;
+        // hit_brick = 1;
+        bounce = ball_dir; // Return
+      }
+      break;
+    case 1: // North East
+      if (my_quantendo.getPixel(ball_x + 1, ball_y + 1) != 0){
+        bounce = ball_dir;
+      }
+    break;
+    case 2: // East
+      if (my_quantendo.getPixel(ball_x + 1, ball_y) != 0){
         bounce = ball_dir;
       }
       break;
-    case 4:
+    case 3: // South East
+      if (my_quantendo.getPixel(ball_x + 1, ball_y - 1) != 0){
+        bounce = ball_dir;
+      }
+      break;
+    case 4: // North
       if (my_quantendo.getPixel(ball_x, ball_y - 1) != 0 ){
-        bounce = ball_dir + (ball_x - player);
+        bounce = ball_dir + (ball_x - player); // Can only be on the bat so bounce depending on the bat side
+      }
+      break;
+    case 5: // South West
+      if (my_quantendo.getPixel(ball_x - 1, ball_y - 1) != 0){
+        bounce = ball_dir;
+      }
+      break;
+    case 6: // West
+      if (my_quantendo.getPixel(ball_x - 1, ball_y) != 0){
+        bounce = ball_dir;
+      }
+      break;
+    case 7: // North West
+      if (my_quantendo.getPixel(ball_x - 1, ball_y + 1) != 0){
+        bounce = ball_dir;
       }
       break;
   }
@@ -104,17 +142,28 @@ void check_bounce(){
   if (bounce != -1){
     Serial.println(bounce);
     switch(bounce){
-      case 0:
-        ball_dir = 4;
+      case 0: // North
+        ball_dir = 4; // South
         break;
-      case 3:
-        ball_dir = 7;
+      case 1: // North East
+        ball_dir = 7; // North East
         break;
-      case 4:
-        ball_dir = 0;
+      case 2: // East, wont happen but best add it!
+        ball_dir = 6; // West
         break;
-      case 5:
-        ball_dir = 1;
+      case 3: // South East
+        ball_dir = 1; // North East
+        break;
+      case 4: // South
+        ball_dir = 0;  // North
+        break;
+      case 5: // South West
+        ball_dir = 1; // North West
+        break;
+      case 6: // West, if we end up here there is a problem
+        ball_dir = 2; // East
+      case 7: // North West
+        ball_dir = 1; // North East
         break;
     }
   }
