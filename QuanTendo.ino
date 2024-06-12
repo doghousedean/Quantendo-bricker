@@ -226,6 +226,8 @@ void draw_ball(){
   my_quantendo.setPixel(ball_x, ball_y, 127, 0, 0);
 }
 
+
+
 void button_trigger(){
 switch(game_state){
   case 1:

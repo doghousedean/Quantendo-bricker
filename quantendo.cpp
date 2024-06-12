@@ -20,6 +20,10 @@ void quantendo::begin(void) {
   pixels.show();
 }
 
+uint8_t quantendo::getBrightness(void) {
+  return m_dev ? BRIGHT_DEV : BRIGHT_NORM;
+}
+
 void quantendo::show(void) {
   pixels.show();
 }
@@ -44,6 +48,21 @@ bool quantendo::setPixel(int8_t x, int8_t y, uint8_t r, uint8_t g, uint8_t b) {
 uint32_t quantendo::getPixel(int8_t x, int8_t y) {
   uint32_t ret = pixels.getPixelColor(toPixel(x, y));
   return ret;
+}
+
+uint32_t quantendo::getOriginalColour(uint32_t scaledColor) {
+  uint8_t r = (scaledColor >> 16) & 0xFF;
+  uint8_t g = (scaledColor >> 8) & 0xFF;
+  uint8_t b = scaledColor & 0xFF;
+
+  uint8_t newBrightness = getBrightness() + 1;
+  uint16_t scale = (newBrightness == 1) ? 1 : (65535 / newBrightness);
+
+  uint8_t originalR = (r * scale) >> 8;
+  uint8_t originalG = (g * scale) >> 8;
+  uint8_t originalB = (b * scale) >> 8;
+
+  return pixels.Color(originalR, originalG, originalB);
 }
 
 uint32_t quantendo::colour(uint8_t r, uint8_t g, uint8_t b) {
