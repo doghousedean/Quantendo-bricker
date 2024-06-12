@@ -12,7 +12,7 @@ int8_t player = 4;
 uint8_t ball_x = 4;
 uint8_t ball_y = 1;
 int8_t bounce = -1;
-uint8_t ball_dir = 0;
+uint8_t ball_dir = -1;
 bool hit_brick = 0;
 uint8_t game_state = 0;
 uint8_t s_counter = 3;
@@ -31,6 +31,12 @@ const int digits[10][5][3] = {
   { {1, 1, 1}, {1, 0, 1}, {1, 1, 1}, {0, 0, 1}, {1, 1, 1} }   // 9
 };
 
+void dpln(String msg){
+  // Prints to serial if dev mode
+  if (my_quantendo.isDev()){
+    Serial.println(msg);
+  }
+}
 
 void draw_gui(){
   my_quantendo.rectangle(0, 0, 9, 19, 127, 127, 127);
@@ -60,13 +66,6 @@ void setup() {
 
 }
 
-void dpln(String msg){
-  // Prints to serial if dev mode
-  if (my_quantendo.isDev()){
-    Serial.println(msg);
-  }
-}
-
 void draw_digit(uint8_t x, uint8_t y, uint8_t digit, uint8_t r, uint8_t g, uint8_t b){
   // Draws a digit at x, y with colour r, g, b
   my_quantendo.rectangle(x - 1, y - 1, x + 4, y + 6, r, g, b);
@@ -93,41 +92,49 @@ void ball_collision(){
     case 0: // North
       if (my_quantendo.getPixel(ball_x, ball_y + 1) != 0 ){
         // hit_brick = 1;
-        bounce = ball_dir; // Return
+        dpln("Hit wall North")
+        bounce = ball_dir;
       }
       break;
     case 1: // North East
       if (my_quantendo.getPixel(ball_x + 1, ball_y + 1) != 0){
+        dpln("Hit wall North East")
         bounce = ball_dir;
       }
     break;
     case 2: // East
       if (my_quantendo.getPixel(ball_x + 1, ball_y) != 0){
+        dpln("Hit wall East")
         bounce = ball_dir;
       }
       break;
     case 3: // South East
       if (my_quantendo.getPixel(ball_x + 1, ball_y - 1) != 0){
+        dpln("Hit wall South East")
         bounce = ball_dir;
       }
       break;
-    case 4: // North
+    case 4: // South
       if (my_quantendo.getPixel(ball_x, ball_y - 1) != 0 ){
+        dpln("Hit wall South (bat)")
         bounce = ball_dir + (ball_x - player); // Can only be on the bat so bounce depending on the bat side
       }
       break;
     case 5: // South West
       if (my_quantendo.getPixel(ball_x - 1, ball_y - 1) != 0){
+        dpln("Hit wall South West")
         bounce = ball_dir;
       }
       break;
     case 6: // West
       if (my_quantendo.getPixel(ball_x - 1, ball_y) != 0){
+        dpln("Hit wall West")
         bounce = ball_dir;
       }
       break;
     case 7: // North West
       if (my_quantendo.getPixel(ball_x - 1, ball_y + 1) != 0){
+        dpln("Hit wall North West")
         bounce = ball_dir;
       }
       break;
@@ -172,26 +179,46 @@ void check_bounce(){
 
 void move_ball(){
   // Move ball in direction
-  switch(ball_dir){
-    case 0:
-      ball_y = ball_y + 1;
-      break;
-    case 1:
-      ball_y = ball_y + 1;
-      ball_x = ball_x + 1;
-      break;
-    case 4:
-      ball_y = ball_y - 1;
-      break;
-    case 7:
-      ball_y = ball_y + 1;
-      ball_x = ball_x - 1;
-      break;
+  if (ball_dir > -1){ // If ball not on bat
+    switch(ball_dir){
+      case 0:
+        ball_y = ball_y + 1;
+        break;
+      case 1:
+        ball_y = ball_y + 1;
+        ball_x = ball_x + 1;
+        break;
+      case 2:
+        ball_x = ball_x + 1;
+        ball_y = ball_y;  
+        break;
+      case 3:
+        ball_y = ball_y - 1;
+        ball_x = ball_x + 1;
+        break;
+      case 4:
+        ball_y = ball_y - 1;
+        ball_x = ball_x;
+        break;
+      case 5:
+        ball_y = ball_y - 1;
+        ball_x = ball_x - 1;
+        break;
+      case 6:
+        ball_x = ball_x - 1;
+        ball_y = ball_y;
+        break;
+      case 7:
+        ball_y = ball_y + 1;
+        ball_x = ball_x - 1;
+        break;
+    }
+
+    // Check for bounce and collisions
+    ball_collision();
+    check_bounce();
+    last_ball_update = millis();
   }
-  // Check for bounce and collisions
-  ball_collision();
-  check_bounce();
-  last_ball_update = millis();
 }
  
 void draw_ball(){
@@ -219,6 +246,7 @@ switch(game_state){
     // Fire buttons
     if (my_quantendo.hasPressed(BTN_RED) || my_quantendo.hasPressed(BTN_YEL) || my_quantendo.hasPressed(BTN_GRN) || my_quantendo.hasPressed(BTN_BLU)){
       Serial.println("FIRE!!!!");
+      ball_dir = 0;
     }
     break;
   case 2:
@@ -256,7 +284,7 @@ void loop() {
       if (s_counter == 0){
         game_state = 1;
       }
-      draw_digit(4, 7, s_counter, 0,0,200);
+      draw_digit(4, 7, s_counter, 0, 0, 200);
       break;
 
     case 1:
