@@ -50,19 +50,31 @@ uint32_t quantendo::getPixel(int8_t x, int8_t y) {
   return ret;
 }
 
-uint32_t quantendo::getOriginalColour(uint32_t scaledColor) {
-  uint8_t r = (scaledColor >> 16) & 0xFF;
-  uint8_t g = (scaledColor >> 8) & 0xFF;
-  uint8_t b = scaledColor & 0xFF;
+uint32_t quantendo::getOriginalColour(uint32_t scaledColour, uint8_t brightness) {
+  uint8_t r = (scaledColour >> 16) & 0xFF;
+  uint8_t g = (scaledColour >> 8) & 0xFF;
+  uint8_t b = scaledColour & 0xFF;
 
-  uint8_t newBrightness = getBrightness() + 1;
-  uint16_t scale = (newBrightness == 1) ? 1 : (65535 / newBrightness);
+  uint8_t newBrightness = 256; //brightness + 1;
 
-  uint8_t originalR = (r * scale) >> 8;
-  uint8_t originalG = (g * scale) >> 8;
-  uint8_t originalB = (b * scale) >> 8;
+  if (newBrightness == 1) {
+    // Avoid division by zero
+    return (r << 16) | (g << 8) | b;
+  }
 
-  return pixels.Color(originalR, originalG, originalB);
+  uint8_t originalR = (r * newBrightness) >> 8;
+  uint8_t originalG = (g * newBrightness) >> 8;
+  uint8_t originalB = (b * newBrightness) >> 8;
+
+  // Print intermediate values for debugging
+  Serial.print("r:"); Serial.print(r);
+  Serial.print(" g:"); Serial.print(g);
+  Serial.print(" b:"); Serial.println(b);
+  Serial.print("originalR:"); Serial.print(originalR);
+  Serial.print(" originalG:"); Serial.print(originalG);
+  Serial.print(" originalB:"); Serial.println(originalB);
+
+  return ((uint32_t)originalR << 16) | ((uint32_t)originalG << 8) | originalB;
 }
 
 uint32_t quantendo::colour(uint8_t r, uint8_t g, uint8_t b) {

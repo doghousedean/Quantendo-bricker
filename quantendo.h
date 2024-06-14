@@ -108,6 +108,8 @@ public:
   void show(void);
   bool setPixel(int8_t x, int8_t y, uint8_t r, uint8_t g, uint8_t b);
   uint32_t getPixel(int8_t x, int8_t y);
+  uint8_t getBrightness();
+  uint32_t getOriginalColour(uint32_t scaledColour, uint8_t brightness);
   bool line(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t r, uint8_t g, uint8_t b);
   bool rectangle(int8_t x0, int8_t y0, int8_t x1, int8_t y1, uint8_t r, uint8_t g, uint8_t b);
   bool box(int8_t x0, int8_t y0, int8_t x1, int8_t y1, uint8_t r, uint8_t g, uint8_t b);
