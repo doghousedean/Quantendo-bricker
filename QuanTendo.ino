@@ -8,6 +8,7 @@ quantendo my_quantendo;
 unsigned long last_ball_update = millis();
 unsigned long last_s_update = millis();
 uint8_t count;
+int ball_speed = 250;
 int8_t player = 4;
 uint8_t ball_x = 4;
 uint8_t ball_y = 1;
@@ -26,7 +27,7 @@ uint8_t brick;
 	// - wall, 4
 
 // MAPS ARE UPSIDE DOWN!!
-uint8_t map_data[HEIGHT][WIDTH] = {
+const uint8_t INITIAL_MAP_DATA[HEIGHT][WIDTH] = {
     {0,0,0,0,0,0,0,0,0,0},
     {0,0,0,0,0,0,0,0,0,0},
     {0,0,0,0,0,0,0,0,0,0},
@@ -49,6 +50,8 @@ uint8_t map_data[HEIGHT][WIDTH] = {
     {0,0,0,0,0,0,0,0,0,0}
   };
 
+uint8_t map_data[HEIGHT][WIDTH];
+
 // Define the digit patterns (5x3 for simplicity)
 const int digits[10][5][3] = {
   { {1, 1, 1}, {1, 0, 1}, {1, 0, 1}, {1, 0, 1}, {1, 1, 1} },  // 0
@@ -66,7 +69,7 @@ const int digits[10][5][3] = {
 void dpln(String msg){
   // Prints to serial if dev mode
   if (my_quantendo.isDev()){
-    Serial.println(msg);
+    Serial.println((String)msg);
   }
 }
 
@@ -128,6 +131,9 @@ void setup() {
   Serial.print("Dev mode:");
   Serial.println(my_quantendo.isDev() ? " True" : " False");
   Serial.println(my_quantendo.getNeoPin());
+
+  // Initialize the map data
+  memcpy(map_data, INITIAL_MAP_DATA, sizeof(INITIAL_MAP_DATA));
 
 }
 
@@ -196,55 +202,57 @@ void ball_collision(){
 void remove_wall(uint8_t x, uint8_t y){
   dpln("Removing brick");
   map_data[y][x] = 0;
+  ball_speed = ball_speed * 0.95;
+  dpln((String)ball_speed);
 }
 
-void check_bounce(){
-  brick = map_data[ball_y + ball_dy][ball_x + ball_dx];
-  if (brick != 0){
-    // flip directions if ball is moving
-    if (ball_dx == 1){
-      dpln("Bounce right");
-      ball_dx = -1;
-    }
-    if (ball_dx == -1){
-      dpln("Bounce left");
-      ball_dx = 1;
-    }
-    if (ball_dy == -1){
-      dpln("Bounce down");
-      ball_dy = 1;
-    }
-    if (ball_dy == 1){
-      dpln("Bounce up");
-      ball_dy = -1;
+void check_bounce() {
+  bool bounced = false;
+  uint8_t old_ball_dx = ball_dx;
+  uint8_t old_ball_dy = ball_dy;
+
+  // Check horizontal (x-axis) collision
+  if (ball_dx != 0) {
+    int next_x = ball_x + ball_dx;
+    if (next_x < 0 || next_x >= WIDTH || map_data[ball_y][next_x] != 0) {
+      ball_dx = -ball_dx;
+      bounced = true;
+      if (map_data[ball_y][next_x] != 0) {
+        remove_wall(next_x, ball_y);
+      }
     }
   }
-  if (ball_x <= 0){
-      ball_dx = 1;
+  
+  // Check vertical (y-axis) collision
+  if (ball_dy != 0) {
+    int next_y = ball_y + ball_dy;
+    if (next_y < 0 || next_y >= HEIGHT || map_data[next_y][ball_x] != 0) {
+      ball_dy = -ball_dy;
+      bounced = true;
+      if (map_data[next_y][ball_x] != 0) {
+        remove_wall(ball_x, next_y);
+      }
+    }
   }
-  if (ball_x >= 9){
-      ball_dx = -1;
-  }
-  if (ball_y <= 0){
-      ball_dy = 1;
-  }
-  if (ball_y >= 19){
-      ball_dy = -1;
+  // If a brick was hit, remove it
+  if ((bounced == 1)  && (map_data[ball_y + old_ball_dy][ball_x + old_ball_dx] != 0)) {
+    dpln("Bounced");
+    dpln((String)map_data[ball_y + old_ball_dy][ball_x + old_ball_dx]);
+    remove_wall(ball_x + old_ball_dx, ball_y + old_ball_dy);
   }
 }
 
-void move_ball(){
+void move_ball() {
+  // Check for bounce and collisions
+  ball_collision();
+  
   // Move ball in direction
   ball_x += ball_dx;
   ball_y += ball_dy;
-  char buf[40];
-  brick = map_data[ball_y + ball_dy][ball_x + ball_dx];
-  sprintf(buf, "dx: %d, dy: %d, brick: %d", ball_dx, ball_dy, brick);
-  dpln(buf);
-  // Check for bounce and collisions
-  ball_collision();
+  
   last_ball_update = millis();
 }
+
  
 void draw_ball(){
   // Render
@@ -259,7 +267,7 @@ void button_trigger(){
     case 1:
       // Left Button
       if (my_quantendo.hasPressed(BTN_LEFT)) {
-        if (player > 2) {
+        if (player > 1) {
           player--;
         }
 
@@ -267,7 +275,7 @@ void button_trigger(){
 
       // Right Button
       if (my_quantendo.hasPressed(BTN_RIGHT)) {
-        if (player < 7) {
+        if (player < 8) {
           player++;
         }
         
@@ -283,11 +291,27 @@ void button_trigger(){
       restart_game();
       break;
     case 3:
+          // Left Button
+      if (my_quantendo.hasPressed(BTN_LEFT)) {
+        if (player > 1) {
+          player--;
+          ball_x = player;
+        }
+      }
+      // Right Button
+      if (my_quantendo.hasPressed(BTN_RIGHT)) {
+        if (player < 8) {
+          player++;
+          ball_x = player;
+        }
+      }
+    if (my_quantendo.hasPressed(BTN_RED) || my_quantendo.hasPressed(BTN_YEL) || my_quantendo.hasPressed(BTN_GRN) || my_quantendo.hasPressed(BTN_BLU)){
       // Ball on bat
       if ((ball_dx == 0) && (ball_dy == 0)){
         ball_dy = 1;
         game_state = 1;
       }
+    }
   }
 }
 void clear(){
@@ -306,6 +330,9 @@ void restart_game(){
   hit_brick = 0;
   s_counter = 3;
   game_state = 0;
+
+// Reset the map data
+  memcpy(map_data, INITIAL_MAP_DATA, sizeof(INITIAL_MAP_DATA));
 }
 
 void draw_stats(){
@@ -338,7 +365,7 @@ void loop() {
       // draw_gui();
       draw_level();
       draw_player();
-      if (millis() > last_ball_update + 250){
+      if (millis() > last_ball_update + ball_speed){
         move_ball();
       }
       draw_ball();
