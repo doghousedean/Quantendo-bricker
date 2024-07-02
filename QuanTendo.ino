@@ -8,6 +8,7 @@ quantendo my_quantendo;
 unsigned long last_ball_update = millis();
 unsigned long last_s_update = millis();
 uint8_t count;
+uint8_t current_level = 1;
 int ball_speed = 250;
 int8_t player = 4;
 uint8_t ball_x = 4;
@@ -27,30 +28,74 @@ uint8_t brick;
 	// - wall, 4
 
 // MAPS ARE UPSIDE DOWN!!
-const uint8_t INITIAL_MAP_DATA[HEIGHT][WIDTH] = {
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,0,0,0,0,0,0,0,0,0},
-    {0,3,3,3,3,3,3,3,3,0},
-    {0,0,3,3,3,3,3,3,0,0},
-    {0,3,3,3,3,3,3,3,3,0},
-    {0,0,3,3,3,3,3,3,0,0},
-    {0,3,3,3,3,3,3,3,3,0},
-    {0,0,3,3,3,3,3,3,0,0},
-    {0,0,0,0,0,0,0,0,0,0}
+const uint8_t INITIAL_MAP_DATA[2][HEIGHT][WIDTH] = {
+    {
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,3,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,3,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0}
+    },
+    {
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
+      {0,3,3,3,3,3,3,3,3,0},
+      {0,0,3,3,3,3,3,3,0,0},
+      {0,3,3,3,3,3,3,3,3,0},
+      {0,0,3,3,3,3,3,3,0,0},
+      {0,3,3,3,3,3,3,3,3,0},
+      {0,0,3,3,3,3,3,3,0,0},
+      {0,0,0,0,0,0,0,0,0,0}
+    }
   };
 
 uint8_t map_data[HEIGHT][WIDTH];
+
+
+void setup() {
+  Serial.begin(115200);
+  randomSeed(analogRead(0));
+
+  Serial.println("QuanTendo - Bricker");
+
+  my_quantendo = quantendo();
+  my_quantendo.begin();
+
+  Serial.print("Dev mode:");
+  Serial.println(my_quantendo.isDev() ? " True" : " False");
+  Serial.println(my_quantendo.getNeoPin());
+
+  // Initialize the map data
+  memcpy(map_data, INITIAL_MAP_DATA[0], sizeof(INITIAL_MAP_DATA[0]));
+
+}
+
 
 // Define the digit patterns (5x3 for simplicity)
 const int digits[10][5][3] = {
@@ -119,24 +164,6 @@ void draw_player(){
   my_quantendo.line(player - 1, 0, player + 1, 0, 127, 0, 127);
 }
 
-void setup() {
-  Serial.begin(115200);
-  randomSeed(analogRead(0));
-
-  Serial.println("QuanTendo - Bricker");
-
-  my_quantendo = quantendo();
-  my_quantendo.begin();
-
-  Serial.print("Dev mode:");
-  Serial.println(my_quantendo.isDev() ? " True" : " False");
-  Serial.println(my_quantendo.getNeoPin());
-
-  // Initialize the map data
-  memcpy(map_data, INITIAL_MAP_DATA, sizeof(INITIAL_MAP_DATA));
-
-}
-
 void draw_digit(uint8_t x, uint8_t y, uint8_t digit, uint8_t r, uint8_t g, uint8_t b){
   // Draws a digit at x, y with colour r, g, b
   my_quantendo.rectangle(x - 2, y + 2, x + 4, y - 6, r, g, b);
@@ -159,86 +186,96 @@ uint8_t detect_wall(uint8_t x, uint8_t y){
 
 }
 
-bool check_bat_hit(){
-  // check if we hit the bat and return true|false
-  if ((ball_dy == - 1) && (ball_y == 1)){
-    // Check if the balls moves down it will be inline with the bat
-    switch(ball_dx){
-      case -1:
-        dpln("Ball moving left");
-        if ((ball_x - 1 >= player - 1) && (ball_x - 1 <= player + 1)){
-          return true;
-        }
-      case 0:
-        dpln("Ball moving down");
-        if ((ball_x >= player - 1) && (ball_x <= player + 1)){
-          return true;
-        }
-      case 1:
-        dpln("Ball moving right");
-        if ((ball_x + 1 >= player - 1) && (ball_x + 1 <= player + 1)){
-          return true;
-        }
+bool check_bat_hit() {
+  // Check if the ball is going to hit the bat
+  if (ball_dy == -1 && ball_y == 1) {
+    int next_x = ball_x + ball_dx;
+    if (next_x >= player - 1 && next_x <= player + 1) {
+      return true;
     }
   }
-  // All other options return False
   return false;
 }
 
-void ball_collision(){
-  if (check_bat_hit()){
+void ball_collision() {
+  if (check_bat_hit()) {
     dpln("Hit bat");
     ball_dx = (ball_x - player); 
     ball_dy = 1;
     return;
   }
   check_bounce();
-  if (ball_y == 0){
-    // ball below bat
+  if (ball_y == 0) {
+    // Ball below bat
     game_state = 2;
   }
 }
+
+uint8_t check_for_win(){
+  uint8_t bcount = 0;
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    for (uint8_t x = 0; x < WIDTH; x++) {
+      if (map_data[y][x] == 3) {
+        bcount += 1;
+      }
+    }
+  }
+  return bcount;
+}
+
 
 void remove_wall(uint8_t x, uint8_t y){
   dpln("Removing brick");
   map_data[y][x] = 0;
   ball_speed = ball_speed * 0.95;
-  dpln((String)ball_speed);
+  if (check_for_win() == 0){
+    dpln("WINNER!");
+    game_state = 4;
+  }else{
+    dpln((String)check_for_win());
+  }
 }
 
 void check_bounce() {
   bool bounced = false;
-  uint8_t old_ball_dx = ball_dx;
-  uint8_t old_ball_dy = ball_dy;
+  int next_x = ball_x + ball_dx;
+  int next_y = ball_y + ball_dy;
 
-  // Check horizontal (x-axis) collision
-  if (ball_dx != 0) {
-    int next_x = ball_x + ball_dx;
-    if (next_x < 0 || next_x >= WIDTH || map_data[ball_y][next_x] != 0) {
+  // Check if the next position is out of bounds
+  if (next_x < 0 || next_x >= WIDTH || next_y < 0 || next_y >= HEIGHT) {
+    if (next_x < 0 || next_x >= WIDTH) {
       ball_dx = -ball_dx;
-      bounced = true;
-      if (map_data[ball_y][next_x] != 0) {
-        remove_wall(next_x, ball_y);
-      }
     }
-  }
-  
-  // Check vertical (y-axis) collision
-  if (ball_dy != 0) {
-    int next_y = ball_y + ball_dy;
-    if (next_y < 0 || next_y >= HEIGHT || map_data[next_y][ball_x] != 0) {
+    if (next_y < 0 || next_y >= HEIGHT) {
       ball_dy = -ball_dy;
+    }
+    bounced = true;
+  } else {
+    // Check for block collision at the next position
+    if (map_data[next_y][next_x] != 0) {
+      ball_dx = -ball_dx;
+      ball_dy = -ball_dy;
+      remove_wall(next_x, next_y);
       bounced = true;
-      if (map_data[next_y][ball_x] != 0) {
+    } else {
+      // Check for horizontal collision if moving diagonally
+      if (ball_dx != 0 && map_data[ball_y][next_x] != 0) {
+        ball_dx = -ball_dx;
+        remove_wall(next_x, ball_y);
+        bounced = true;
+      }
+
+      // Check for vertical collision if moving diagonally
+      if (ball_dy != 0 && map_data[next_y][ball_x] != 0) {
+        ball_dy = -ball_dy;
         remove_wall(ball_x, next_y);
+        bounced = true;
       }
     }
   }
-  // If a brick was hit, remove it
-  if ((bounced == 1)  && (map_data[ball_y + old_ball_dy][ball_x + old_ball_dx] != 0)) {
+
+  if (bounced) {
     dpln("Bounced");
-    dpln((String)map_data[ball_y + old_ball_dy][ball_x + old_ball_dx]);
-    remove_wall(ball_x + old_ball_dx, ball_y + old_ball_dy);
   }
 }
 
@@ -252,17 +289,13 @@ void move_ball() {
   
   last_ball_update = millis();
 }
-
  
 void draw_ball(){
   // Render
   my_quantendo.setPixel(ball_x, ball_y, 127, 0, 0);
 }
 
-
-
 void button_trigger(){
-  dpln((String)game_state);
   switch(game_state){
     case 1:
       // Left Button
@@ -314,6 +347,7 @@ void button_trigger(){
     }
   }
 }
+
 void clear(){
   my_quantendo.box(0, 0, 9, 19, 0, 0, 0);
 }
@@ -332,7 +366,7 @@ void restart_game(){
   game_state = 0;
 
 // Reset the map data
-  memcpy(map_data, INITIAL_MAP_DATA, sizeof(INITIAL_MAP_DATA));
+  memcpy(map_data, INITIAL_MAP_DATA[0], sizeof(INITIAL_MAP_DATA[0]));
 }
 
 void draw_stats(){
@@ -378,6 +412,16 @@ void loop() {
       }
       my_quantendo.line(0, 9, 9, 0, 255, 0, 0);
       my_quantendo.line(9, 9, 0, 0, 255, 0, 0);
+      break;
+    case 4:
+      // Winner
+      count = my_quantendo.readButtons();
+      if (count > 0){
+        button_trigger();
+      }
+      my_quantendo.line(2,3,5,1,0,127,0);
+      my_quantendo.line(5,1,9,10,0,127,0);
+      break;
   }
   
   my_quantendo.show();
