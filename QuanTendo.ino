@@ -16,20 +16,12 @@ uint8_t ball_y = 1;
 int8_t bounce = -1;
 int8_t ball_dx = 0;
 int8_t ball_dy = 0;
-bool hit_brick = 0;
 uint8_t game_state = 0;
 uint8_t s_counter = 3;
-uint8_t brick;
-
-	// - clear, 0
-	// - ball, 1
-	// - player, 2
-	// - edge, 3
-	// - wall, 4
 
 // MAPS ARE UPSIDE DOWN!!
-const uint8_t INITIAL_MAP_DATA[2][HEIGHT][WIDTH] = {
-    {
+const uint8_t INITIAL_MAP_DATA[HEIGHT][WIDTH] = {
+    
       {0,0,0,0,0,0,0,0,0,0},
       {0,0,0,0,0,0,0,0,0,0},
       {0,0,0,0,0,0,0,0,0,0},
@@ -39,7 +31,7 @@ const uint8_t INITIAL_MAP_DATA[2][HEIGHT][WIDTH] = {
       {0,0,0,0,0,0,0,0,0,0},
       {0,0,0,0,0,0,0,0,0,0},
       {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,3,0,0,0,0,0},
+      {0,0,0,0,0,0,0,0,0,0},
       {0,0,0,0,0,0,0,0,0,0},
       {0,0,0,0,0,0,0,0,0,0},
       {0,0,0,0,0,0,0,0,0,0},
@@ -50,49 +42,23 @@ const uint8_t INITIAL_MAP_DATA[2][HEIGHT][WIDTH] = {
       {0,0,0,0,0,0,0,0,0,0},
       {0,0,0,0,0,0,0,0,0,0},
       {0,0,0,0,0,0,0,0,0,0}
-    },
-    {
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,0,0,0,0,0,0,0,0,0},
-      {0,3,3,3,3,3,3,3,3,0},
-      {0,0,3,3,3,3,3,3,0,0},
-      {0,3,3,3,3,3,3,3,3,0},
-      {0,0,3,3,3,3,3,3,0,0},
-      {0,3,3,3,3,3,3,3,3,0},
-      {0,0,3,3,3,3,3,3,0,0},
-      {0,0,0,0,0,0,0,0,0,0}
-    }
+  
   };
 
 uint8_t map_data[HEIGHT][WIDTH];
 
-
 void setup() {
   Serial.begin(115200);
   randomSeed(analogRead(0));
-
   Serial.println("QuanTendo - Bricker");
-
   my_quantendo = quantendo();
   my_quantendo.begin();
-
   Serial.print("Dev mode:");
   Serial.println(my_quantendo.isDev() ? " True" : " False");
+  Serial.print("NeoPixel Pin: ");
   Serial.println(my_quantendo.getNeoPin());
-
   // Initialize the map data
-  memcpy(map_data, INITIAL_MAP_DATA[0], sizeof(INITIAL_MAP_DATA[0]));
+  memcpy(map_data, INITIAL_MAP_DATA, sizeof(INITIAL_MAP_DATA));
 
 }
 
@@ -116,11 +82,6 @@ void dpln(String msg){
   if (my_quantendo.isDev()){
     Serial.println((String)msg);
   }
-}
-
-void draw_gui(){
-  my_quantendo.rectangle(0, 0, 9, 19, 127, 127, 127);
-  my_quantendo.line(1, 0, 8, 0, 0, 0, 0);
 }
 
 uint32_t get_tile_colour(uint8_t t){
@@ -176,16 +137,6 @@ void draw_digit(uint8_t x, uint8_t y, uint8_t digit, uint8_t r, uint8_t g, uint8
   }
 }
 
-uint8_t detect_wall(uint8_t x, uint8_t y){
-  // Return walls around ball
-  // Directions
-  // [7][0][1]
-  // [6][B][2]
-  // [5][4][3]
-
-
-}
-
 bool check_bat_hit() {
   // Check if the ball is going to hit the bat
   if (ball_dy == -1 && ball_y == 1) {
@@ -212,15 +163,15 @@ void ball_collision() {
 }
 
 uint8_t check_for_win(){
-  uint8_t bcount = 0;
+  uint8_t brick_count = 0;
   for (uint8_t y = 0; y < HEIGHT; y++) {
     for (uint8_t x = 0; x < WIDTH; x++) {
       if (map_data[y][x] == 3) {
-        bcount += 1;
+        brick_count += 1;
       }
     }
   }
-  return bcount;
+  return brick_count;
 }
 
 
@@ -320,6 +271,7 @@ void button_trigger(){
       }
       break;
     case 2:
+    case 4:
       delay(500);
       restart_game();
       break;
@@ -345,6 +297,7 @@ void button_trigger(){
         game_state = 1;
       }
     }
+    break;
   }
 }
 
@@ -358,21 +311,13 @@ void restart_game(){
   player = 4;
   ball_x = 4;
   ball_y = 1;
-  // bounce = -1;
   ball_dx = 0;
   ball_dy = 0;
-  hit_brick = 0;
   s_counter = 3;
   game_state = 0;
 
 // Reset the map data
-  memcpy(map_data, INITIAL_MAP_DATA[0], sizeof(INITIAL_MAP_DATA[0]));
-}
-
-void draw_stats(){
-  // char output[50];
-  // sprintf(output, "Ball_X: %d, Ball_y: %d, Ball_dir: %d, Player: %d", ball_x, ball_y, ball_dir, player);
-  // dpln(output);
+  memcpy(map_data, INITIAL_MAP_DATA, sizeof(INITIAL_MAP_DATA));
 }
 
 void loop() {
@@ -392,6 +337,7 @@ void loop() {
     case 1:
     case 3:
       //  Running
+
       count = my_quantendo.readButtons();
       if (count > 0) {
         button_trigger();
@@ -419,8 +365,14 @@ void loop() {
       if (count > 0){
         button_trigger();
       }
-      my_quantendo.line(2,3,5,1,0,127,0);
-      my_quantendo.line(5,1,9,10,0,127,0);
+      my_quantendo.line(1,6,3,2,0,127,0);
+      my_quantendo.line(3,2,4,3,0,127,0);
+      my_quantendo.setPixel(5, 2, 0, 127, 0);
+      my_quantendo.setPixel(6, 3, 0, 127, 0);
+      my_quantendo.setPixel(6, 4, 0, 127, 0);
+      my_quantendo.setPixel(7, 5, 0, 127, 0);
+      my_quantendo.setPixel(7, 6, 0, 127, 0);
+
       break;
   }
   
